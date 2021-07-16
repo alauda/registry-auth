@@ -41,11 +41,11 @@ var (
 )
 
 type Authorization struct {
-	Type      string         `json:"type" yaml:"type"`
-	Target    string         `json:"target" yaml:"target"`
-	UseRegexp bool           `json:"useRegexp" yaml:"useRegexp"`
-	regexp    *regexp.Regexp `json:"-"`
-	Actions   []string       `json:"actions" yaml:"actions"`
+	Type      string   `json:"type" yaml:"type"`
+	Target    string   `json:"target" yaml:"target"`
+	UseRegexp bool     `json:"useRegexp" yaml:"useRegexp"`
+	Actions   []string `json:"actions" yaml:"actions"`
+	regexp    *regexp.Regexp
 }
 
 type UserAuthorization struct {

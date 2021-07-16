@@ -2,6 +2,8 @@ package registryauth
 
 import (
 	"context"
+	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,6 +11,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/cssivision/reverseproxy"
 	"go.uber.org/zap"
 	"gomod.alauda.cn/alauda-backend/pkg/client"
 	"gomod.alauda.cn/alauda-backend/pkg/decorator"
@@ -25,6 +28,8 @@ type Server struct {
 	AuthConfigLabelSelector string
 	AuthTokenDuration       int
 	AuthIssuer              string
+	RegistryBackend         string
+	proxy                   *reverseproxy.ReverseProxy
 	ClientManger            client.Manager
 	client                  kubernetes.Interface
 	processor               *AuthProcessor
@@ -58,16 +63,16 @@ func (s *Server) ApplyToServer(srv server.Server) error {
 	ws := gen.New(srv)
 	logger = srv.L().Named("registry-auth")
 	ws.Doc("Registry Auth")
-	ws.Path("/auth")
 	ws.ApiVersion("v1")
 
 	ws.Route(
-		ws.GET("/token").
+		ws.GET("/auth/token").
 			To(s.HandleAuth).
 			Doc("Handle registry auth"),
 	)
 
 	srv.Container().Add(ws)
+	srv.Container().ServeMux.Handle("/v2/", http.HandlerFunc(s.HandleProxy))
 
 	ws = gen.New(srv)
 	ws.Path("/health")
@@ -103,5 +108,24 @@ func (s *Server) ApplyToServer(srv server.Server) error {
 			return err
 		}
 	}
+
+	if s.RegistryBackend != "" {
+		s.proxy = reverseproxy.NewReverseProxy(&url.URL{
+			Host:   s.RegistryBackend,
+			Scheme: "http",
+		})
+		s.proxy.ModifyResponse = func(res *http.Response) error {
+			if location := res.Header.Get("Location"); location != "" {
+				if loc, err := url.Parse(location); err == nil {
+					loc.Host = ""
+					loc.Scheme = ""
+					location = loc.String()
+					res.Header.Set("Location", location)
+				}
+			}
+			return nil
+		}
+	}
+
 	return nil
 }

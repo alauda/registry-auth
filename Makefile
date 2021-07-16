@@ -21,7 +21,7 @@ include build/lib/golang.mk
 ## build: Build source code for amd64 and arm64 platform.
 .PHONY: build
 build:
-	@$(MAKE) go.build.multiarch
+	@$(MAKE) go.build
 
 .PHONY: fmt
 fmt:

@@ -9,6 +9,7 @@ replace (
 )
 
 require (
+	github.com/cssivision/reverseproxy v0.0.1
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/go-openapi/spec v0.19.4 // indirect

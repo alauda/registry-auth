@@ -17,6 +17,7 @@ const (
 	flagAuthConfigNamespace     = "auth-config-namespace"
 	flagAuthConfigLabelSelector = "auth-config-selector"
 	flagAuthTokenDuration       = "auth-token-duration"
+	flagRegistryBackend         = "registry-backend"
 
 	configAuthPrivateKeyFile      = "auth.private_key_file"
 	configAuthPublicCertFile      = "auth.public_cert_file"
@@ -25,6 +26,7 @@ const (
 	configAuthConfigNamespace     = "auth.config_namespace"
 	configAuthConfigLabelSelector = "auth.config_selector"
 	configAuthTokenDuration       = "auth.token_duration"
+	configRegistryBackend         = "registry.backend"
 )
 
 // ServerOptions contains configuration for server
@@ -58,7 +60,7 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The static auth config file.")
 	_ = viper.BindPFlag(configAuthConfigFile, fs.Lookup(flagAuthConfigFile))
 
-	fs.String(flagAuthConfigNamespace, "cpaas-system",
+	fs.String(flagAuthConfigNamespace, "",
 		"The secret auth config namespace.")
 	_ = viper.BindPFlag(configAuthConfigNamespace, fs.Lookup(flagAuthConfigNamespace))
 
@@ -69,6 +71,10 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.Int(flagAuthTokenDuration, 600,
 		"The token duration in seconds.")
 	_ = viper.BindPFlag(configAuthTokenDuration, fs.Lookup(flagAuthTokenDuration))
+
+	fs.String(flagRegistryBackend, "127.0.0.1:5000",
+		"The backend registry address.")
+	_ = viper.BindPFlag(configRegistryBackend, fs.Lookup(flagRegistryBackend))
 
 }
 
@@ -81,6 +87,8 @@ func (o *ServerOptions) ApplyFlags() []error {
 	o.AuthConfigNamespace = viper.GetString(configAuthConfigNamespace)
 	o.AuthConfigLabelSelector = viper.GetString(configAuthConfigLabelSelector)
 	o.AuthTokenDuration = viper.GetInt(configAuthTokenDuration)
+
+	o.RegistryBackend = viper.GetString(configRegistryBackend)
 
 	for _, it := range []struct {
 		Var    *string

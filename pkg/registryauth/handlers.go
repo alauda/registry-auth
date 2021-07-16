@@ -59,6 +59,27 @@ func (s *Server) HandleAuth(req *restful.Request, res *restful.Response) {
 	res.WriteAsJson(token)
 }
 
+func (s *Server) HandleProxy(res http.ResponseWriter, req *http.Request) {
+	now := time.Now()
+
+	clientIP := getClientIP(req)
+
+	if s.RegistryBackend == "" {
+		res.Write([]byte("no registry-backend config"))
+		res.WriteHeader(http.StatusNotFound)
+	}
+
+	req.Header.Add("Host", req.Host)
+
+	defer func() {
+		ms := time.Since(now).Milliseconds()
+		info := fmt.Sprintf("%s | %s %s => %s %d ms", clientIP, req.Method, req.URL.Path, s.RegistryBackend, ms)
+		logger.Info(info, log.String("func", "HandleProxy"))
+	}()
+
+	s.proxy.ServeHTTP(res, req)
+}
+
 func getClientIP(req *http.Request) string {
 	realIP := req.Header.Get("X-Real-Ip")
 	if realIP != "" {
