@@ -1,6 +1,9 @@
 package app
 
 import (
+	"fmt"
+	"net/http"
+
 	"gomod.alauda.cn/alauda-backend/pkg/server"
 	"gomod.alauda.cn/app"
 	"gomod.alauda.cn/registry-auth/cmd/registry-auth/app/options"
@@ -28,7 +31,15 @@ func run(opts *options.Options) app.RunFunc {
 			return err
 		}
 
-		srv.Start()
-		return nil
+		v, _ := srv.GetValue("ServerOptions")
+		serverOptions := v.(*options.ServerOptions)
+
+		addr := fmt.Sprintf("%s:%d", serverOptions.BindAddress, serverOptions.Port)
+		handler := srv.Container()
+
+		if serverOptions.TLSCertFile != "" && serverOptions.TLSKeyFile != "" {
+			return http.ListenAndServeTLS(addr, serverOptions.TLSCertFile, serverOptions.TLSKeyFile, handler)
+		}
+		return http.ListenAndServe(addr, handler)
 	}
 }

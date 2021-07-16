@@ -14,12 +14,10 @@ func NewOptions(name string) *Options {
 	return &Options{
 		Optioner: options.With(
 			options.NewLogOptions(),
-			options.NewInsecureServingOptions(),
 			options.NewClientOptions(),
 			options.NewMetricsOptions(),
 			options.NewErrorOptions(),
 			NewServerOptions(),
-			options.NewOpenAPIOptions(),
 		),
 	}
 }

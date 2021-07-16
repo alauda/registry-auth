@@ -2,6 +2,7 @@ package options
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -18,6 +19,10 @@ const (
 	flagAuthConfigLabelSelector = "auth-config-selector"
 	flagAuthTokenDuration       = "auth-token-duration"
 	flagRegistryBackend         = "registry-backend"
+	flagServerBindAddress       = "server-bind-address"
+	flagServerPort              = "server-port"
+	flagServerTLSCertFile       = "server-tls-cert-file"
+	flagServerTLSKeyFile        = "server-tls-key-file"
 
 	configAuthPrivateKeyFile      = "auth.private_key_file"
 	configAuthPublicCertFile      = "auth.public_cert_file"
@@ -27,11 +32,19 @@ const (
 	configAuthConfigLabelSelector = "auth.config_selector"
 	configAuthTokenDuration       = "auth.token_duration"
 	configRegistryBackend         = "registry.backend"
+	configServerBindAddress       = "server.bind_address"
+	configServerPort              = "server.port"
+	configServerTLSCertFile       = "server.tls_cert_file"
+	configServerTLSKeyFile        = "server.tls_key_file"
 )
 
 // ServerOptions contains configuration for server
 type ServerOptions struct {
 	*registryauth.Server
+	BindAddress string
+	Port        int
+	TLSCertFile string
+	TLSKeyFile  string
 }
 
 // NewConsoleOptions creates a ConsoleOptions object with default parameters.
@@ -44,6 +57,23 @@ func NewServerOptions() *ServerOptions {
 
 // AddFlags adds flags for console to the specified FlagSet object.
 func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
+
+	fs.String(flagServerBindAddress, "",
+		"The listening IP address.")
+	_ = viper.BindPFlag(configServerBindAddress, fs.Lookup(flagServerBindAddress))
+
+	fs.Int(flagServerPort, 8080,
+		"The listening port.")
+	_ = viper.BindPFlag(configServerPort, fs.Lookup(flagServerPort))
+
+	fs.String(flagServerTLSCertFile, "",
+		"The tls certificate for server.")
+	_ = viper.BindPFlag(configServerTLSCertFile, fs.Lookup(flagServerTLSCertFile))
+
+	fs.String(flagServerTLSKeyFile, "",
+		"The tls key for server.")
+	_ = viper.BindPFlag(configServerTLSKeyFile, fs.Lookup(flagServerTLSKeyFile))
+
 	fs.String(flagAuthPrivateKeyFile, "",
 		"The private key for sign JWT token.")
 	_ = viper.BindPFlag(configAuthPrivateKeyFile, fs.Lookup(flagAuthPrivateKeyFile))
@@ -83,6 +113,23 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 func (o *ServerOptions) ApplyFlags() []error {
 	var errs []error
 
+	o.BindAddress = viper.GetString(configServerBindAddress)
+	if o.BindAddress != "" && net.ParseIP(o.BindAddress) == nil {
+		errs = append(errs, fmt.Errorf("--%s must be IP", flagServerBindAddress))
+	}
+
+	o.Port = viper.GetInt(configServerPort)
+	if o.Port < 0 {
+		errs = append(errs, fmt.Errorf("--%s must >= 0", flagServerPort))
+	}
+
+	o.TLSCertFile = viper.GetString(configServerTLSCertFile)
+	o.TLSKeyFile = viper.GetString(configServerTLSKeyFile)
+
+	if (o.TLSCertFile == "" && o.TLSKeyFile != "") || (o.TLSCertFile != "" && o.TLSKeyFile == "") {
+		errs = append(errs, fmt.Errorf("--%s must config with --%s together", configServerTLSCertFile, configServerTLSKeyFile))
+	}
+
 	o.AuthConfigFile = viper.GetString(configAuthConfigFile)
 	o.AuthConfigNamespace = viper.GetString(configAuthConfigNamespace)
 	o.AuthConfigLabelSelector = viper.GetString(configAuthConfigLabelSelector)
@@ -112,5 +159,6 @@ func (o *ServerOptions) ApplyFlags() []error {
 func (o *ServerOptions) ApplyToServer(srv server.Server) error {
 	o.Server.Server = srv
 	o.Server.ClientManger = srv.GetManager()
+	srv.SetValue("ServerOptions", o)
 	return o.Server.ApplyToServer(srv)
 }
