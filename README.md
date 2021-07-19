@@ -15,7 +15,7 @@
     | --auth-config-selector  | registry-auth-config=true | 认证配置所在保密字典的选择器，可选
     | --auth-token-duration   | 600                       | JWT的有效时长，单位：秒
     | --auth-issuer           | registry-token-issuer     | JWT的签发者名称
-    | --registry-backend      | 127.0.0.1:5000            | 代理后端registry的路径
+    | --registry-backend      | 127.0.0.1:5000            | 代理后端registry的地址，可选
     | --kubeconfig            |                           | 访问k8s的配置文件路径，可选，认证配置命名空间非空时必填
     | --log-level             | info                      | 日志级别
 
@@ -23,21 +23,20 @@
 
     ``` yaml
     users:
-    user1: password1           # 使用明文密码
-    # 使用bcrypt加密后的密码，可用命令：`htpasswd -nbB user2 password2` 生成加密后的密码
-    user2: $2y$05$o.txf8NBl17CimmIKybYYe9SmIcAzctQ84.UbFCObPFxt78W1DEJW
+      user1: password1           # 使用明文密码
+      user2: $2y$05$o.txf8NBl17CimmIKybYYe9SmIcAzctQ84.UbFCObPFxt78W1DEJW # 使用bcrypt加密后的密码，可用命令：`htpasswd -nbB user2 password2` 生成加密后的密码
     auths:
-    user1:                     # user1的权限配置
-    - target: usersrepo/test1  # repoistory名称
+      user1:                     # user1的权限配置
+      - target: usersrepo/test1  # repoistory名称
         actions:                 # 允许的操作
         - pull
         - push
-    - target: team1repo/.*     # 使用正则表达式表示匹配的repoistory名称
+      - target: team1repo/.*     # 使用正则表达式表示匹配的repoistory名称
         useRegexp: true          # 表示target是使用了正则表达式
         actions:
         - pull
-    _anonymous:                # 配置匿名用户的权限，匿名用户登录时不需要提供用户名密码
-    - target: tkestack/.* 
+      _anonymous:                # 配置匿名用户的权限，匿名用户登录时不需要提供用户名密码
+      - target: tkestack/.* 
         useRegexp: true 
         actions:
         - pull
