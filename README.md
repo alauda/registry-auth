@@ -4,10 +4,10 @@
 
     |          命令行参数       |            默认值          |                     说明
     |            ---          |             ---           |                     ---
-    | --server-bind-address   |                           | Sever监听的IP，默认监听所有
-    | --server-port           | 8080                      | Sever监听的端口
-    | --server-tls-cert-file  |                           | Sever的证书路径，可选，不选则以HTTP方式工作
-    | --server-tls-key-file   |                           | Sever的证书路径，可选
+    | --server-bind-address   |                           | Server监听的IP，默认监听所有
+    | --server-port           | 8080                      | Server监听的端口
+    | --server-tls-cert-file  |                           | Server的证书路径，可选，不选则以HTTP方式工作
+    | --server-tls-key-file   |                           | Server的证书路径，可选
     | --auth-public-cert-file |                           | 签发JWT使用的证书路径，必填
     | --auth-private-key-file |                           | 签发JWT使用的Key路径，必填
     | --auth-config-file      |                           | 认证配置文件路径，可选
@@ -64,14 +64,14 @@
 
     ``` yaml
     env:
-    - name: REGISTRY_TOKEN_AUTOREDIRECT
+    - name: REGISTRY_AUTH_TOKEN_AUTOREDIRECT
       value: "false"
-    - name: REGISTRY_TOKEN_REALM
+    - name: REGISTRY_AUTH_TOKEN_REALM
       value: https://192.168.254.1:18080/auth/token
-    - name: REGISTRY_TOKEN_SERVICE
+    - name: REGISTRY_AUTH_TOKEN_SERVICE
       value: token-service
-    - name: REGISTRY_TOKEN_ISSER
+    - name: REGISTRY_AUTH_TOKEN_ISSUER
       value: registry-token-issuer
-    - name: REGISTRY_TOKEN_ROOTCERTBUNDLE
+    - name: REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE
       value: /tmp/tls.crt
     ```
