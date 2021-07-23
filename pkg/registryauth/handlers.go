@@ -32,7 +32,7 @@ func (s *Server) HandleAuth(req *restful.Request, res *restful.Response) {
 		debug := fmt.Sprintf("%s %s %d %v in %d ms", clientIP, req.Request.URL.String(), status, err, ms)
 		logger.Debug(debug, log.String("func", "HandleAuth"))
 
-		info := fmt.Sprintf("%s | %s | %s | %v | %v | %d | %d ms", clientIP, accountArg, scopeArg, resultScope, status, err, ms)
+		info := fmt.Sprintf("%s | %s | %s | %v | %d | %v | %d ms", clientIP, accountArg, scopeArg, resultScope, status, err, ms)
 		logger.Info(info, log.String("func", "HandleAuth"))
 	}()
 	user, err := s.processor.Authenticate(req.HeaderParameter("Authorization"))
