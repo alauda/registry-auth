@@ -2,11 +2,13 @@ package registryauth
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	"k8s.io/client-go/kubernetes"
@@ -110,10 +112,25 @@ func (s *Server) ApplyToServer(srv server.Server) error {
 	}
 
 	if s.RegistryBackend != "" {
-		s.proxy = reverseproxy.NewReverseProxy(&url.URL{
-			Host:   s.RegistryBackend,
-			Scheme: "http",
-		})
+		s.proxy = &reverseproxy.ReverseProxy{
+			Director: func(req *http.Request) {},
+			Transport: &http.Transport{
+				Proxy: http.ProxyFromEnvironment,
+				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+					return (&net.Dialer{
+						Timeout:   30 * time.Second,
+						KeepAlive: 30 * time.Second,
+						DualStack: true,
+					}).DialContext(ctx, "tcp", s.RegistryBackend)
+				},
+				ForceAttemptHTTP2:     true,
+				MaxIdleConns:          100,
+				IdleConnTimeout:       90 * time.Second,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: 1 * time.Second,
+			},
+		}
+
 		s.proxy.ModifyResponse = func(res *http.Response) error {
 			if location := res.Header.Get("Location"); location != "" {
 				if loc, err := url.Parse(location); err == nil {
