@@ -113,7 +113,9 @@ func (s *Server) ApplyToServer(srv server.Server) error {
 
 	if s.RegistryBackend != "" {
 		s.proxy = &reverseproxy.ReverseProxy{
-			Director: func(req *http.Request) {},
+			Director: func(req *http.Request) {
+				req.URL.Scheme = "http"
+			},
 			Transport: &http.Transport{
 				Proxy: http.ProxyFromEnvironment,
 				DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {

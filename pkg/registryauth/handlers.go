@@ -77,6 +77,8 @@ func (s *Server) HandleProxy(res http.ResponseWriter, req *http.Request) {
 		logger.Info(info, log.String("func", "HandleProxy"))
 	}()
 
+	req.URL.Host = req.Host
+
 	s.proxy.ServeHTTP(res, req)
 }
 
