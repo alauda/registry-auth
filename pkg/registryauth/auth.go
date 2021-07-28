@@ -17,7 +17,6 @@ import (
 	"github.com/docker/libtrust"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"github.com/thoas/go-funk"
 	"golang.org/x/crypto/bcrypt"
 	"gomod.alauda.cn/log"
 	"gopkg.in/square/go-jose.v2"
@@ -333,7 +332,7 @@ func (a *AuthProcessor) Authorize(user string, scope AccessScope) AccessScope {
 				r = append(r, ClaimAccess{
 					Type:    s.Type,
 					Name:    s.Name,
-					Actions: funk.IntersectString(s.Actions, it.Actions),
+					Actions: it.Actions,
 				})
 			}
 		}
