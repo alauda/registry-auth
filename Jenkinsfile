@@ -23,6 +23,13 @@ AlaudaPipeline{
     GOPROXY: "https://athens.alauda.cn,direct",
   ]
   steps = [
+    [
+      name: "Build",
+      container: language,
+      commands: [
+        "sed -i 's|build-harbor|harbor-b|g' build/docker/node-manager.Dockerfile"
+      ]
+    ]
   ]
 }
 
