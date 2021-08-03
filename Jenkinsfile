@@ -27,7 +27,8 @@ AlaudaPipeline{
       name: "Build",
       container: language,
       commands: [
-        "sed -i 's|build-harbor|harbor-b|g' build/docker/node-manager.Dockerfile"
+        "make",
+        "sed -i 's|build-harbor|harbor-b|g' build/docker/registry-auth.Dockerfile"
       ]
     ]
   ]
