@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"regexp"
 	"strings"
 	"sync"
@@ -27,16 +28,21 @@ import (
 
 const (
 	RepoistoryAccessType = "repository"
+	RegistryAccessType   = "registry"
 	PullAction           = "pull"
 	PushAction           = "push"
+	CatalogAction        = "*"
+	DeleteAction         = "delete"
 	AnonymousUser        = "_anonymous"
 	BasicPrefix          = "Basic "
+	BearerPrefix         = "Bearer "
 	PBKDF2Prefix         = "PBKDF2:"
 	SecretKey            = "config"
 )
 
 var (
-	ErrAuthFailed = fmt.Errorf("wrong username or password")
+	ErrAuthFailed   = fmt.Errorf("wrong username or password")
+	resourceNameReg = regexp.MustCompile("^/v2((?:/[a-z0-9._-]+)*/[a-z0-9._-]+)/(?:tags|blobs).*$")
 )
 
 type Authorization struct {
@@ -91,6 +97,8 @@ type Claims struct {
 	Access    []ClaimAccess   `json:"access"`
 }
 
+type ScopeDecoder func(r *http.Request) (AccessScope, error)
+
 func (ca *ClaimAccess) String() string {
 	return strings.Join([]string{
 		ca.Type, ca.Name, strings.Join(ca.Actions, ","),
@@ -105,8 +113,58 @@ func (s AccessScope) String() string {
 	return strings.Join(t, " ")
 }
 
-func DecodeScope(scope string) (AccessScope, error) {
+func getActionFromHttpReq(req *http.Request) []string {
+	if req.URL.Path == "/v2/" {
+		return []string{}
+	} else if req.URL.Path == "/v2/_catalog" {
+		return []string{CatalogAction}
+	}
+
+	result := make([]string, 0)
+	switch req.Method {
+	case http.MethodGet, http.MethodHead:
+		result = append(result, PullAction)
+	case http.MethodPut, http.MethodPatch, http.MethodPost:
+		result = append(result, PushAction)
+	case http.MethodDelete:
+		result = append(result, DeleteAction)
+	}
+	return result
+}
+
+func DecodeScopeFromUrl(req *http.Request) (AccessScope, error) {
 	var r AccessScope
+	var claimAccessName, claimAccessType string
+	if req.URL.Path == "/v2/_catalog" {
+		claimAccessName = "catalog"
+		claimAccessType = RegistryAccessType
+	} else if req.URL.Path == "/v2/" {
+		claimAccessType = ""
+		claimAccessName = ""
+	// When processing /v2/<name>/manifests/<reference>, special processing is required to prevent tags from being manifests, tags or blobs
+	} else if pathParms := strings.Split(req.URL.Path, "/"); len(pathParms) >= 5 && pathParms[len(pathParms)-2] == "manifests" { // hanlde
+		claimAccessName = strings.Join(pathParms[2:len(pathParms)-2], "/")
+		claimAccessType = RepoistoryAccessType
+	} else {
+		nameArr := resourceNameReg.FindStringSubmatch(req.URL.Path)
+		if len(nameArr) != 2 {
+			return r, fmt.Errorf("invalid request url")
+		}
+		claimAccessName = nameArr[1][1:]
+		claimAccessType = RepoistoryAccessType
+	}
+
+	r = append(r, ClaimAccess{
+		Type:    claimAccessType,
+		Name:    claimAccessName,
+		Actions: getActionFromHttpReq(req),
+	})
+	return r, nil
+}
+
+func DecodeScope(req *http.Request) (AccessScope, error) {
+	var r AccessScope
+	scope := req.FormValue("scope")
 	if scope == "" {
 		return r, nil
 	}
@@ -119,9 +177,6 @@ func DecodeScope(scope string) (AccessScope, error) {
 			Type:    access[0],
 			Name:    access[1],
 			Actions: strings.Split(access[2], ","),
-		}
-		if ca.Type != RepoistoryAccessType {
-			return nil, fmt.Errorf(`unsupport scope type "%s"`, ca.Type)
 		}
 		r = append(r, ca)
 	}

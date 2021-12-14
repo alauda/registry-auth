@@ -23,6 +23,7 @@ const (
 	flagServerPort              = "server-port"
 	flagServerTLSCertFile       = "server-tls-cert-file"
 	flagServerTLSKeyFile        = "server-tls-key-file"
+	flagAuthService             = "service"
 
 	configAuthPrivateKeyFile      = "auth.private_key_file"
 	configAuthPublicCertFile      = "auth.public_cert_file"
@@ -36,6 +37,7 @@ const (
 	configServerPort              = "server.port"
 	configServerTLSCertFile       = "server.tls_cert_file"
 	configServerTLSKeyFile        = "server.tls_key_file"
+	configAuthService             = "auth.service"
 )
 
 // ServerOptions contains configuration for server
@@ -106,6 +108,10 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The backend registry address.")
 	_ = viper.BindPFlag(configRegistryBackend, fs.Lookup(flagRegistryBackend))
 
+	fs.String(flagAuthService, "token-service",
+		"The registry service type.")
+	_ = viper.BindPFlag(configAuthService, fs.Lookup(flagAuthService))
+
 }
 
 // ApplyFlags parsing parameters from the command line or configuration file
@@ -136,7 +142,7 @@ func (o *ServerOptions) ApplyFlags() []error {
 	o.AuthTokenDuration = viper.GetInt(configAuthTokenDuration)
 
 	o.RegistryBackend = viper.GetString(configRegistryBackend)
-
+	o.AuthService = viper.GetString(configAuthService)
 	for _, it := range []struct {
 		Var    *string
 		Config string
