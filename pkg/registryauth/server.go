@@ -31,6 +31,7 @@ type Server struct {
 	AuthTokenDuration       int
 	AuthIssuer              string
 	RegistryBackend         string
+	AuthService             string
 	proxy                   *reverseproxy.ReverseProxy
 	ClientManger            client.Manager
 	client                  kubernetes.Interface
