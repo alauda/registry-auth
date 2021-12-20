@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/thoas/go-funk"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -27,7 +28,7 @@ import (
 )
 
 const (
-	RepoistoryAccessType = "repository"
+	RepositoryAccessType = "repository"
 	RegistryAccessType   = "registry"
 	PullAction           = "pull"
 	PushAction           = "push"
@@ -41,8 +42,9 @@ const (
 )
 
 var (
-	ErrAuthFailed   = fmt.Errorf("wrong username or password")
-	resourceNameReg = regexp.MustCompile("^/v2((?:/[a-z0-9._-]+)*/[a-z0-9._-]+)/(?:tags|blobs).*$")
+	ErrAuthFailed          = fmt.Errorf("wrong username or password")
+	ErrNotHandleAuthHeader = fmt.Errorf("no need to process authorization header")
+	resourceNameReg        = regexp.MustCompile("^/v2((?:/[a-z0-9._-]+)*/[a-z0-9._-]+)/(?:tags|blobs).*$")
 )
 
 type Authorization struct {
@@ -98,6 +100,7 @@ type Claims struct {
 }
 
 type ScopeDecoder func(r *http.Request) (AccessScope, error)
+type ScopeMatcher func(result AccessScope, request AccessScope) bool
 
 func (ca *ClaimAccess) String() string {
 	return strings.Join([]string{
@@ -139,19 +142,18 @@ func DecodeScopeFromUrl(req *http.Request) (AccessScope, error) {
 		claimAccessName = "catalog"
 		claimAccessType = RegistryAccessType
 	} else if req.URL.Path == "/v2/" {
-		claimAccessType = ""
-		claimAccessName = ""
-	// When processing /v2/<name>/manifests/<reference>, special processing is required to prevent tags from being manifests, tags or blobs
-	} else if pathParms := strings.Split(req.URL.Path, "/"); len(pathParms) >= 5 && pathParms[len(pathParms)-2] == "manifests" { // hanlde
-		claimAccessName = strings.Join(pathParms[2:len(pathParms)-2], "/")
-		claimAccessType = RepoistoryAccessType
+		return nil, ErrNotHandleAuthHeader
+		// When processing /v2/<name>/manifests/<reference>, special processing is required to prevent tags from being manifests, tags or blobs
+	} else if pathParams := strings.Split(req.URL.Path, "/"); len(pathParams) >= 5 && pathParams[len(pathParams)-2] == "manifests" {
+		claimAccessName = strings.Join(pathParams[2:len(pathParams)-2], "/")
+		claimAccessType = RepositoryAccessType
 	} else {
 		nameArr := resourceNameReg.FindStringSubmatch(req.URL.Path)
 		if len(nameArr) != 2 {
 			return r, fmt.Errorf("invalid request url")
 		}
 		claimAccessName = nameArr[1][1:]
-		claimAccessType = RepoistoryAccessType
+		claimAccessType = RepositoryAccessType
 	}
 
 	r = append(r, ClaimAccess{
@@ -259,7 +261,7 @@ func (a *AuthProcessor) parseAuths(auths map[string][]Authorization) {
 	for _, auth := range auths {
 		for i := range auth {
 			if auth[i].Type == "" {
-				auth[i].Type = RepoistoryAccessType
+				auth[i].Type = RepositoryAccessType
 			}
 			if auth[i].UseRegexp {
 				var err error
@@ -414,4 +416,19 @@ func (a *AuthProcessor) Sign(user, service string, scope AccessScope) (*Token, e
 	return &Token{
 		Token: token,
 	}, nil
+}
+
+func IsScopeActionMatch(resultScope AccessScope, requestScope AccessScope) bool {
+	for _, resultAccess := range resultScope {
+		for _, requestAccess := range requestScope {
+			if requestAccess.Type != resultAccess.Type {
+				continue
+			}
+			if !funk.Subset(requestAccess.Actions, resultAccess.Actions) {
+				return false
+			}
+		}
+	}
+
+	return true
 }
