@@ -2,6 +2,7 @@ package registryauth
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
 	"net"
 	"net/http"
 	"strings"
@@ -11,7 +12,7 @@ import (
 	"gomod.alauda.cn/log"
 )
 
-func (s *Server) signToken(req *restful.Request, decodeScopeFunc ScopeDecoder) (token *Token, status int, err error) {
+func (s *Server) signToken(req *restful.Request, decodeScopeFunc ScopeDecoder, isActionMatchFunc ScopeMatcher) (token *Token, status int, err error) {
 	var scope, resultScope AccessScope
 	status = 200
 
@@ -39,6 +40,13 @@ func (s *Server) signToken(req *restful.Request, decodeScopeFunc ScopeDecoder) (
 	resultScope = s.processor.Authorize(user, scope)
 	if len(resultScope) == 0 {
 		resultScope = s.processor.Authorize(AnonymousUser, scope)
+	}
+
+	if isActionMatchFunc != nil {
+		if !isActionMatchFunc(resultScope, scope) {
+			err = ErrNotHandleAuthHeader
+			return
+		}
 	}
 	authService := req.QueryParameter("service")
 	if authService == "" {
@@ -70,7 +78,7 @@ func (s *Server) HandleAuth(req *restful.Request, res *restful.Response) {
 		logger.Info(info, log.String("func", "HandleAuth"))
 	}()
 
-	token, status, err := s.signToken(req, DecodeScope)
+	token, status, err := s.signToken(req, DecodeScope, nil)
 	if err != nil {
 		return
 	}
@@ -111,11 +119,12 @@ func (s *Server) HandleProxy(res http.ResponseWriter, req *http.Request) {
 func handleAuthorizationHeader(server *Server, req *http.Request) (int, error) {
 	authHeader := req.Header.Get("Authorization")
 	if strings.HasPrefix(authHeader, BasicPrefix) || authHeader == "" {
-		token, status, err := server.signToken(restful.NewRequest(req), DecodeScopeFromUrl)
-		if err != nil {
+		token, status, err := server.signToken(restful.NewRequest(req), DecodeScopeFromUrl, IsScopeActionMatch)
+		if err == nil {
+			req.Header.Set("Authorization", BearerPrefix+token.Token)
+		} else if !errors.Is(err, ErrNotHandleAuthHeader) {
 			return status, err
 		}
-		req.Header.Set("Authorization", BearerPrefix+token.Token)
 	}
 
 	return http.StatusOK, nil
