@@ -339,7 +339,7 @@ func (a *AuthProcessor) Authenticate(header string) (string, error) {
 	if header == "" {
 		return AnonymousUser, nil
 	}
-	header = strings.TrimLeft(header, BasicPrefix)
+	header = strings.TrimPrefix(header, BasicPrefix)
 	decoded, err := base64.StdEncoding.DecodeString(header)
 	if err != nil {
 		return "", errors.Wrap(err, "decode Basic token")
