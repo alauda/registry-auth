@@ -25,7 +25,7 @@ require (
 	github.com/spf13/cobra v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.6.2
-	github.com/thoas/go-funk v0.9.1 // indirect
+	github.com/thoas/go-funk v0.9.1
 	go.uber.org/atomic v1.5.0 // indirect
 	go.uber.org/zap v1.10.0
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0

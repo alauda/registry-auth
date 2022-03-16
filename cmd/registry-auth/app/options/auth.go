@@ -18,6 +18,7 @@ const (
 	flagAuthConfigNamespace     = "auth-config-namespace"
 	flagAuthConfigLabelSelector = "auth-config-selector"
 	flagAuthTokenDuration       = "auth-token-duration"
+	flagAuthThirdpartyServer    = "auth-thirdparty-server"
 	flagRegistryBackend         = "registry-backend"
 	flagServerBindAddress       = "server-bind-address"
 	flagServerPort              = "server-port"
@@ -32,6 +33,7 @@ const (
 	configAuthConfigNamespace     = "auth.config_namespace"
 	configAuthConfigLabelSelector = "auth.config_selector"
 	configAuthTokenDuration       = "auth.token_duration"
+	configAuthThirdpartyServer    = "auth.thirdparty_server"
 	configRegistryBackend         = "registry.backend"
 	configServerBindAddress       = "server.bind_address"
 	configServerPort              = "server.port"
@@ -112,6 +114,9 @@ func (o *ServerOptions) AddFlags(fs *pflag.FlagSet) {
 		"The registry service type.")
 	_ = viper.BindPFlag(configAuthService, fs.Lookup(flagAuthService))
 
+	fs.String(flagAuthThirdpartyServer, "", "The thirdparty server address.")
+	_ = viper.BindPFlag(configAuthThirdpartyServer, fs.Lookup(flagAuthThirdpartyServer))
+
 }
 
 // ApplyFlags parsing parameters from the command line or configuration file
@@ -140,6 +145,7 @@ func (o *ServerOptions) ApplyFlags() []error {
 	o.AuthConfigNamespace = viper.GetString(configAuthConfigNamespace)
 	o.AuthConfigLabelSelector = viper.GetString(configAuthConfigLabelSelector)
 	o.AuthTokenDuration = viper.GetInt(configAuthTokenDuration)
+	o.AuthThirdpartyServer = viper.GetString(configAuthThirdpartyServer)
 
 	o.RegistryBackend = viper.GetString(configRegistryBackend)
 	o.AuthService = viper.GetString(configAuthService)

@@ -1,8 +1,8 @@
 package registryauth
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"net"
 	"net/http"
 	"strings"

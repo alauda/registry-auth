@@ -30,6 +30,7 @@ type Server struct {
 	AuthConfigLabelSelector string
 	AuthTokenDuration       int
 	AuthIssuer              string
+	AuthThirdpartyServer    string
 	RegistryBackend         string
 	AuthService             string
 	proxy                   *reverseproxy.ReverseProxy
@@ -108,6 +109,12 @@ func (s *Server) ApplyToServer(srv server.Server) error {
 		}
 
 		if err := WatchSecret(s.client, s.AuthConfigNamespace, s.AuthConfigLabelSelector, s.stop, s.processor); err != nil {
+			return err
+		}
+	}
+
+	if s.AuthThirdpartyServer != "" {
+		if err := NewThirdpartyAuth(logger, s.AuthThirdpartyServer, s.processor); err != nil {
 			return err
 		}
 	}

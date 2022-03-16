@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"github.com/thoas/go-funk"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/thoas/go-funk"
 
 	"github.com/docker/libtrust"
 	"github.com/google/uuid"
@@ -69,15 +70,17 @@ type ClaimAccess struct {
 type AccessScope []ClaimAccess
 
 type AuthProcessor struct {
-	lock          sync.RWMutex
-	Issuer        string
-	TokenDuration time.Duration
-	StaticUsers   map[string]string
-	SecretUsers   map[string]string
-	StaticAuths   map[string][]Authorization
-	SecretAuths   map[string][]Authorization
-	signer        jose.Signer
-	kid           string
+	lock           sync.RWMutex
+	Issuer         string
+	TokenDuration  time.Duration
+	StaticUsers    map[string]string
+	SecretUsers    map[string]string
+	StaticAuths    map[string][]Authorization
+	SecretAuths    map[string][]Authorization
+	ThirdpartyAuth ThirdpartyAuth
+
+	signer jose.Signer
+	kid    string
 }
 
 type ConfigFile struct {
@@ -356,8 +359,14 @@ func (a *AuthProcessor) Authenticate(header string) (string, error) {
 	if !ok {
 		hash, ok = a.StaticUsers[username]
 	}
-	if ok && a.verifyPassword(password, hash) {
-		return username, nil
+	if ok {
+		if a.verifyPassword(password, hash) {
+			return username, nil
+		}
+	} else if a.ThirdpartyAuth != nil {
+		if _, err := a.ThirdpartyAuth.Login(username, password); err == nil {
+			return username, nil
+		}
 	}
 	return "", ErrAuthFailed
 }
@@ -368,6 +377,16 @@ func (a *AuthProcessor) Authorize(user string, scope AccessScope) AccessScope {
 	auth, ok := a.SecretAuths[user]
 	if !ok {
 		auth, ok = a.StaticAuths[user]
+	}
+	if !ok && a.ThirdpartyAuth != nil {
+		auth, ok = a.ThirdpartyAuth.UserAuthorization(user)
+		if ok {
+			auths := map[string][]Authorization{
+				user: auth,
+			}
+			a.parseAuths(auths)
+			auth = auths[user]
+		}
 	}
 	if !ok {
 		return nil
