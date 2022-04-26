@@ -1,23 +1,25 @@
-# `FROM` instructions support variables that are declared by any `ARG` instructions that occur before the first `FROM`.
-ARG OPS_DISTROLESS_TAG=20220422
-
-FROM build-harbor.alauda.cn/ait/builder:golang-1.15-alpine-3.14 AS builder
+FROM build-harbor.alauda.cn/ait/builder:golang-1.15-alpine-3.14
 
 ARG GO111MODULE="on"
 ARG GONOSUMDB="gomod.alauda.cn/*"
 ARG GOPROXY="https://athens.alauda.cn,direct"
 
-WORKDIR /src/
-COPY . .
 
-RUN make \
-    && mv _output/$(go env GOOS)/$(go env GOARCH)/registry-auth ./registry-auth \
-    && strip ./registry-auth
+COPY ./  /src
+
+WORKDIR /src
+
+RUN make
+
+RUN mv _output/$(go env GOOS)/$(go env GOARCH)/registry-auth ./registry-auth
+
+RUN strip ./registry-auth
 
 
-FROM build-harbor.alauda.cn/ops/distroless-static:${OPS_DISTROLESS_TAG}
+FROM build-harbor.alauda.cn/ait/base-alpine:v1
 
-WORKDIR /opt/
-COPY --from=builder /src/registry-auth /opt/
+WORKDIR /opt
+
+COPY --from=0 /src/registry-auth /opt/registry-auth
 
 ENTRYPOINT ["/opt/registry-auth"]
