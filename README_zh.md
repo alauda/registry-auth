@@ -32,7 +32,7 @@ openssl req -new -newkey rsa:2048 -days 365 -x509 -keyout token.key -out token.c
 
 # generate a demo auth config
 # only admin can push images but anyone can pull images
-echo <<EOF > ./auth.yaml
+cat <<EOF > ./auth.yaml
 users:
   admin: admin
 auths:
