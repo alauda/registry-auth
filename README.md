@@ -1,6 +1,12 @@
 # Registry-Auth
 
-`registry-auth` providers authentication and authorization for [Docker Registry](https://github.com/distribution/distribution). Docker Registry can be configurated with three kinds of authentications:
+![Registry-Auth svg](./registry-auth.svg)
+
+----
+
+`Registry-Auth` providers authentication and authorization for [Docker Registry](https://github.com/distribution/distribution).
+
+Docker Registry can be configurated with three kinds of authentications:
 
   * **silly** which is only appropriate for development. It simply checks for the existence of the Authorization header in the HTTP request. It does not check the header’s value.
 
@@ -17,11 +23,11 @@
     2. https://docs.docker.com/registry/recipes/apache/
     3. https://docs.docker.com/registry/recipes/nginx/
 
-`registry-auth` has implemented the `token` and the `proxy` authentication.
+Registry-auth has implemented the token and the proxy authentication.
 
 ## Quick Start
 
-The following script will run a simple registry-auth and Docker Registry service. It then tests the docker login and pushes and pulls images.
+The following script will run a simple Registry-Auth and Docker Registry service. It then tests the docker login and pushes and pulls images.
 
 ```bash
 #!/bin/bash
@@ -49,7 +55,7 @@ auths:
     - pull
 EOF
 
-# run registry-auth
+# run Registry-Auth
 docker run -d --name registry-auth -p 8080:8080 \
   -v $(pwd):/etc/registry-auth \
   ghcr.io/alauda/registry-auth:latest \
@@ -81,24 +87,24 @@ docker rmi 127.0.0.1:8080/registry:2.8
 docker pull 127.0.0.1:8080/registry:2.8
 ```
 
-## The `Token` Authentication
+## The Token Authentication
 
-When using the `token` authentication, the registry-auth and the Docker Registry will use the same x509 certificate to sign and verify the token. The `token` is signed by the registry-auth and will be verified by the Docker Registry.
+When using the token authentication, the Registry-Auth and the Docker Registry will use the same x509 certificate to sign and verify the token. The token is signed by the Registry-Auth and will be verified by the Docker Registry.
 
-When the client (such as docker, containerd, etc.) accesses the Docker Registry firstly, the `token` does not exist in the HTTP headers. The Docker Registry will respond with an authentication fail with status code 401, and the "WWW-Authenticate" header is added in the response, which includes the registry-auth's URL.
+When the client (such as docker, containerd, etc.) accesses the Docker Registry firstly, the token does not exist in the HTTP headers. The Docker Registry will respond with an authentication fail with status code 401, and the "WWW-Authenticate" header is added in the response, which includes the Registry-Auth's URL.
 
-Then the client will send the username and password to registry-auth by the Basic Authorization method for a valid token. The registry-auth will check the username and password and also the user's authorized repositories. After all the checks are passed, it will sign a token for the client.
+Then the client will send the username and password to Registry-Auth by the Basic Authorization method for a valid token. The Registry-Auth will check the username and password and also the user's authorized repositories. After all the checks are passed, it will sign a token for the client.
 
 The client then accesses the Docker Registry secondly with the token. And the Docker Registry will respond with the image content after validating the token.
 
-The sequence of `token` authentication is here:
+The sequence of token authentication is here:
 ```mermaid
     sequenceDiagram;
       participant c as client
       participant r as Docker Registry
-      participant ra as registry-auth
+      participant ra as Registry-Auth
       c->>+r: request image
-      r->>-c: 401 with registry-auth URL
+      r->>-c: 401 with Registry-Auth URL
       c->>+ra: request token by username/password
       ra->>ra: authenticate and authorize
       ra->>-c: response with token
@@ -107,19 +113,19 @@ The sequence of `token` authentication is here:
       r->>-c: response with image
 ```
 
-## The `Proxy` Authentication
+## The Proxy Authentication
 
-The registry-auth's `proxy` authentication works with the `token` authentication. The registry-auth is deployed before the Docker Registry as a proxy, but `token` authentication is also taken between registry-auth and Docker Registry. When using `proxy` authentication, only one access endpoint is needed, which will simplify the deployment and reduce the client's requests.
+The Registry-Auth's proxy authentication works with token authentication. The Registry-Auth is deployed before the Docker Registry as a proxy, but token authentication is also taken between Registry-Auth and Docker Registry. When using proxy authentication, only one access endpoint is needed, which will simplify the deployment and reduce the client's requests.
 
-When the client access registry-auth (also the Docker Registry) with the Basic Authorization header, the registry-auth will check the username and password and also the user's authorized repositories, and then sign a token. The token is transmitted to the Docker Registry with the origin request.
+When the client access Registry-Auth (also the Docker Registry) with the Basic Authorization header, the Registry-Auth will check the username and password and also the user's authorized repositories, and then sign a token. The token is transmitted to the Docker Registry with the origin request.
 
 The Docker Registry will respond with the image content after validating the token.
 
-The sequence of `proxy` authentication is here:
+The sequence of proxy authentication is here:
 ```mermaid
     sequenceDiagram;
       participant c as client
-      participant ra as registry-auth
+      participant ra as Registry-Auth
       participant r as Docker Registry
       c->>+ra: request image with username/password
       ra->>ra: authenticate and authorize
@@ -132,7 +138,7 @@ The sequence of `proxy` authentication is here:
 
 ## Configurations
 
-The `registry-auth` can load a config file set by the argument `--auth-config-file`. The config file contains the usernames, passwords and authorizations for repositories.
+Registry-auth can load a config file set by the argument `--auth-config-file`. The config file contains the usernames, passwords and authorizations for repositories.
 
 The format and example of the configuration are here:
 
@@ -158,7 +164,7 @@ The format and example of the configuration are here:
         - pull
   ```
 
-The `registry-auth` can load configurations from Kubernetes secrets through the arguments `--auth-config-selector`, `--auth-config-selector` and `--kubeconfig`. The configurations in the secrets are preferred to those loaded from the config file.
+Registry-auth can load configurations from Kubernetes secrets through the arguments `--auth-config-selector`, `--auth-config-selector` and `--kubeconfig`. The configurations in the secrets are preferred to those loaded from the config file.
 
 The secret example:
 
@@ -184,7 +190,7 @@ data:
         - push
 ```
 
-## The `registry-auth` Argumentes
+## ComanndLine Argumentes
 
   | Argument | Default | Description |
   | ------------------------ | ------------------------- | ---------------------------------------------------------- |
@@ -207,7 +213,7 @@ data:
 
 ## The Docker Registry's Config
 
-The Docker Registry need configure to work with `registry-auth`.
+The Docker Registry need configure to work with Registry-Auth.
 You can configure it by config file or environment variables.
 
 You can add the following configs in /etc/docker/registry/config.yml:
@@ -216,10 +222,10 @@ You can add the following configs in /etc/docker/registry/config.yml:
 auth:
   token:
     autoredirect: true                             # Set it true for proxy authentication, set it false for token authentication.
-    realm: /auth/token                             # The registry-auth's URL. Set relative path for using proxy authentication, but full URL is needed for token authentication.
+    realm: /auth/token                             # The Registry-Auth's URL. Set relative path for using proxy authentication, but full URL is needed for token authentication.
     service: docker-registry                       # It's used by the authentication server to distinguish different Docker Registry instances, but useless for now.
-    issuer: registry-token-issuer                  # Same with registry-auth
-    rootcertbundle: /etc/registry-auth/token.crt   # Same with registry-auth's --auth-public-cert-file argument.
+    issuer: registry-token-issuer                  # Same with Registry-Auth
+    rootcertbundle: /etc/registry-auth/token.crt   # Same with Registry-Auth's --auth-public-cert-file argument.
 ```
 
 Or you can exploit the following equivalent environment variables:

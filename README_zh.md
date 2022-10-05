@@ -1,6 +1,13 @@
+
 # Registry-Auth
 
-`registry-auth` 为 [Docker Registry](https://github.com/distribution/distribution) 提供了认证和授权功能。Docker Registry 支持三种认证方式：silly、htpasswd 和 token。
+![Registry-Auth svg](./registry-auth.svg)
+
+----
+
+`Registry-Auth` 为 [Docker Registry](https://github.com/distribution/distribution) 提供了认证和授权功能。
+
+Docker Registry 支持三种认证方式：silly、htpasswd 和 token。
 
   * **silly** 仅可适用于开发环境。它要求请求中带有 Authorization 头，但并不检查请求的合法性。
 
@@ -10,18 +17,18 @@
 
     例如：用户 `test1` 只能从仓库 `repo1` 拉取，而用户 `test2` 能从仓库　`repo2` 推送和拉取。
 
-  * 除了上述方式外，在 Docker 的部署文档中，还提到了`代理`认证方式，即在 Docker Registry 前面部署`代理`，在代理上做认证。
+  * 除了上述方式外，在 Docker 的部署文档中，还提到了`代理`认证方式，即在 Docker Registry 前面部署代理，在代理上做认证。
 
     有关代理方式的参考：
     1. https://docs.docker.com/registry/deploying/#more-advanced-authentication
     2. https://docs.docker.com/registry/recipes/apache/
     3. https://docs.docker.com/registry/recipes/nginx/
 
-`registry-atuh` 实现了上述的 `token` 方式 和`代理`方式。
+registry-atuh 实现了上述的 Token 认证方式 和 代理认证方式。
 
 ## 快速体验
 
-下面的脚本运行了简单的 registry-auth 和 Docker Registry 服务，并测试了 docker login、push 及 pull 镜像。
+下面的脚本运行了简单的 Registry-Auth 和 Docker Registry 服务，并测试了 docker login、push 及 pull 镜像。
 
 ```bash
 #!/bin/bash
@@ -49,7 +56,7 @@ auths:
     - pull
 EOF
 
-# run registry-auth
+# run Registry-Auth
 docker run -d --name registry-auth -p 8080:8080 \
   -v $(pwd):/etc/registry-auth \
   ghcr.io/alauda/registry-auth:latest \
@@ -81,23 +88,23 @@ docker rmi 127.0.0.1:8080/registry:2.8
 docker pull 127.0.0.1:8080/registry:2.8
 ```
 
-## `token` 方式
-在 `token` 方式下，registry-auth 和 Docker Registry 配置了同一套 x509 证书，由 registry-auth 签发 token，由 Docker Registry 验证 token 的合法性。
+## Token 认证
+在 Token 认证方式下，Registry-Auth 和 Docker Registry 配置了同一套 x509 证书，由 Registry-Auth 签发 token，由 Docker Registry 验证 token 的合法性。
 
-当 client（docker、containerd等） 访问 Docker Registry 时，Docker Registry 发现请求头中没有 token 时，将返回状态码为 401 的认证失败的响应，并在 "WWW-Authenticate" 响应头中包含 registry-auth 的URL。
+当 client（docker、containerd等） 访问 Docker Registry 时，Docker Registry 发现请求头中没有 token 时，将返回状态码为 401 的认证失败的响应，并在 "WWW-Authenticate" 响应头中包含 Registry-Auth 的URL。
 
-client 随即用 Basic Authorization 方式将用户名和密码发送给 registry-auth。registry-auth 验证用户名和密码并检查用户的权限，在通过后将签发 token 返回给 client。
+client 随即用 Basic Authorization 方式将用户名和密码发送给 Registry-Auth。Registry-Auth 验证用户名和密码并检查用户的权限，在通过后将签发 token 返回给 client。
 
 client 再次带着 token 请求 Docker Registry。Docker Registry 验证 token 后返回镜像内容。
 
-`token` 方式的时序流程如下：
+Token 认证方式的时序流程如下：
 ```mermaid
     sequenceDiagram;
       participant c as client
       participant r as Docker Registry
-      participant ra as registry-auth
+      participant ra as Registry-Auth
       c->>+r: request image
-      r->>-c: 401 with registry-auth URL
+      r->>-c: 401 with Registry-Auth URL
       c->>+ra: request token by username/password
       ra->>ra: authenticate and authorize
       ra->>-c: response with token
@@ -106,19 +113,19 @@ client 再次带着 token 请求 Docker Registry。Docker Registry 验证 token 
       r->>-c: response with image
 ```
 
-## `代理`方式
+## 代理认证方式
 
-`registry-auth` 的`代理`方式兼容了 `token` 方式。registry-auth 部署在 Docker Registry 之前充当代理，但 registry-auth 与 Docker Registry 之间仍然是采用了 token 认证。代理方式对外只需要提供一个访问地址，减少了部署的复杂度，也简化了 client 的请求路径。
+Registry-Auth 的代理认证方式兼容了 Token 认证方式。Registry-Auth 部署在 Docker Registry 之前充当代理，但 Registry-Auth 与 Docker Registry 之间仍然是采用了 token 认证。代理方式对外只需要提供一个访问地址，减少了部署的复杂度，也简化了 client 的请求路径。
 
-当 client 带有 Basic Authorization 访问 registry-auth / Docker Registry 时，registry-auth 验证用户名和密码并检查用户的权限，然后签发出 token，并把带着 token 的请求传发给 Docker Registry。
+当 client 带有 Basic Authorization 访问 Registry-Auth / Docker Registry 时，Registry-Auth 验证用户名和密码并检查用户的权限，然后签发出 token，并把带着 token 的请求传发给 Docker Registry。
 
 Docker Registry 验证 token 后返回镜像内容。
 
-`代理` 方式的时序流程如下：
+代理认证方式的时序流程如下：
 ```mermaid
     sequenceDiagram;
       participant c as client
-      participant ra as registry-auth
+      participant ra as Registry-Auth
       participant r as Docker Registry
       c->>+ra: request image with username/password
       ra->>ra: authenticate and authorize
@@ -130,7 +137,7 @@ Docker Registry 验证 token 后返回镜像内容。
 ```
 
 ## 配置说明
-`registry-auth` 启动时可以通过参数 `--auth-config-file` 指定配置文件，在配置文件中设置用户名密码和针对不同镜像仓库的权限。
+Registry-Auth 启动时可以通过参数 `--auth-config-file` 指定配置文件，在配置文件中设置用户名密码和针对不同镜像仓库的权限。
 
 配置文件格式及示例如下：
   ```yaml
@@ -154,7 +161,7 @@ Docker Registry 验证 token 后返回镜像内容。
         actions:
         - pull
   ```
-`registry-auth` 可以通过参数 `--auth-config-selector`，`--auth-config-selector` 和 `--kubeconfig` 从 Kubernetes 的 secrets 中加载配置文件，secrets 的配置优先级高于配置文件。
+Registry-Auth 可以通过参数 `--auth-config-selector`，`--auth-config-selector` 和 `--kubeconfig` 从 Kubernetes 的 secrets 中加载配置文件，secrets 的配置优先级高于配置文件。
 
 secrets 示例:
 ```yaml
@@ -179,7 +186,7 @@ data:
         - push
 ```
 
-## `registry-auth` 参数:
+## 命令行参数:
 
   | 参数 | 默认值 | 说明 |
   | ------------------------ | ------------------------- | --------------------- |
@@ -202,7 +209,7 @@ data:
 
 ## Docker Registry 配置说明
 
-当使用 `registry-auth` 时，Docker Registry 也要做必要的设置。
+当使用 Registry-Auth 时，Docker Registry 也要做必要的设置。
 你可以选择通过 **配置文件** 或 **环境变量** 的方式配置 Docker Registry。
 
 你可以在 /etc/docker/registry/config.yml 中配置如下字段：
@@ -211,10 +218,10 @@ data:
 auth:
   token:
     autoredirect: true                             # 采用代理方式时设为 true，采用 token 方式时设为 false
-    realm: /auth/token                             # registry-auth URL，在代理方式下，只需要填写相对路径，token 方式下要写全URL，
+    realm: /auth/token                             # Registry-Auth URL，在代理方式下，只需要填写相对路径，token 方式下要写全URL，
     service: docker-registry                       # 用于认证服务区分不同的 Docker Registry 实例，目前没使用此特性
-    issuer: registry-token-issuer                  # 与 registry-auth 的 --auth-issuer 保持一致
-    rootcertbundle: /etc/registry-auth/token.crt   # 与 registry-auth 的 --auth-public-cert-file 保持一致
+    issuer: registry-token-issuer                  # 与 Registry-Auth 的 --auth-issuer 保持一致
+    rootcertbundle: /etc/registry-auth/token.crt   # 与 Registry-Auth 的 --auth-public-cert-file 保持一致
 ```
 
 或者采用上述配置的等价的 **环境变量**进行配置：
