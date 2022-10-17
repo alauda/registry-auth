@@ -19,9 +19,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Get git version
+      - name: Get registry tags
+        shell: bash
         run: |
-          echo "GIT_VERSION=$(git describe --dirty --always --tags | sed 's/-/./g')" >> $GITHUB_ENV
+          GIT_BRANCH="${GITHUB_REF_NAME}"
+          if [ "${GITHUB_REF}" == "refs/pull/"*"/merge" ]; then
+            GIT_BRANCH="pr-$(echo ${GITHUB_REF} | sed 's|refs/pull/(.*)/merge|\1|g')-${GITHUB_SHA:0:8}"
+          fi
+          echo "GIT_BRANCH=${GIT_BRANCH}" >> $GITHUB_ENV
+
+          REGISTRY_TAGS="${REGISTRY}/${IMAGE_NAME}:${GIT_BRANCH}"
+          if [ "${GIT_BRANCH}" == "main" ]; then
+            REGISTRY_TAGS="${REGISTRY_TAGS},${REGISTRY}/${IMAGE_NAME}:latest"
+          fi
+          echo "REGISTRY_TAGS=${REGISTRY_TAGS}" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
@@ -42,4 +53,4 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.GIT_VERSION }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY_TAGS }}
