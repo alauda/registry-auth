@@ -30,7 +30,7 @@ Registry-auth has implemented the token and the proxy authentication.
 The following [script](./scripts/quick-start.sh) will run a simple Registry-Auth and Docker Registry service. It then tests the docker login and pushes and pulls images.
 
 ```bash
-  curl https://github.com/alauda/registry-auth/blob/main/scripts/quick-start.sh | bash
+  curl https://raw.githubusercontent.com/alauda/registry-auth/main/scripts/quick-start.sh | bash
 ```
 
 ## The Token Authentication

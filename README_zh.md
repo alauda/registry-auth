@@ -30,7 +30,7 @@ registry-atuh 实现了上述的 Token 认证方式 和 代理认证方式。
 下面的[脚本](./scripts/quick-start.sh)运行了简单的 Registry-Auth 和 Docker Registry 服务，并测试了 docker login、push 及 pull 镜像。
 
 ```bash
-  curl https://github.com/alauda/registry-auth/blob/main/scripts/quick-start.sh | bash
+  curl https://raw.githubusercontent.com/alauda/registry-auth/main/scripts/quick-start.sh | bash
 ```
 
 ## Token 认证
