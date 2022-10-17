@@ -1,7 +1,6 @@
-
 # Registry-Auth
 
-![Registry-Auth svg](./registry-auth.svg)
+![Registry-Auth SVG](./registry-auth.svg)
 
 ----
 
@@ -11,7 +10,7 @@ Docker Registry 支持三种认证方式：silly、htpasswd 和 token。
 
   * **silly** 仅可适用于开发环境。它要求请求中带有 Authorization 头，但并不检查请求的合法性。
 
-  * **htpasswd** 支持静态地配置用户名密码。Docker Registry 只在启动时加载一次 htpasswd 配置。htpasswd 只解决了认证问题，并未解决授权问题。
+  * **htpasswd** 支持静态地配置用户名密码。Docker Registry 只在启动时加载一次 `htpasswd` 配置。htpasswd 只解决了认证问题，并未解决授权问题。
 
   * **token** 不但支持用户认证，而且支持用户授权。token 采用了 JWT 格式，包含了有效期和允许的操作。你可以为各个镜像仓库（repository）设置单独的用户权限。
 
@@ -28,64 +27,10 @@ registry-atuh 实现了上述的 Token 认证方式 和 代理认证方式。
 
 ## 快速体验
 
-下面的脚本运行了简单的 Registry-Auth 和 Docker Registry 服务，并测试了 docker login、push 及 pull 镜像。
+下面的[脚本](./scripts/quick-start.sh)运行了简单的 Registry-Auth 和 Docker Registry 服务，并测试了 docker login、push 及 pull 镜像。
 
 ```bash
-#!/bin/bash
-
-# generate certificates
-openssl req -new -newkey rsa:2048 -days 365 -x509 -keyout server.key -out server.crt -nodes -subj '/CN=registry-auth-server'
-openssl req -new -newkey rsa:2048 -days 365 -x509 -keyout token.key -out token.crt -nodes -subj '/CN=registry-auth-token'
-
-# generate a demo auth config
-# only admin can push images but anyone can pull images
-cat <<EOF > ./auth.yaml
-users:
-  admin: admin
-auths:
-  admin:
-  - target: .*
-    useRegexp: true
-    actions:
-    - pull
-    - push
-  _anonymous:
-  - target: .*
-    useRegexp: true
-    actions:
-    - pull
-EOF
-
-# run Registry-Auth
-docker run -d --name registry-auth -p 8080:8080 \
-  -v $(pwd):/etc/registry-auth \
-  ghcr.io/alauda/registry-auth:latest \
-  --server-tls-cert-file=/etc/registry-auth/server.crt \
-  --server-tls-key-file=/etc/registry-auth/server.key \
-  --auth-public-cert-file=/etc/registry-auth/token.crt \
-  --auth-private-key-file=/etc/registry-auth/token.key \
-  --auth-config-file=/etc/registry-auth/auth.yaml
-
-# run docker registry
-docker run -d \
-  --name registry \
-  --network container:registry-auth \
-  -v $(pwd)/token.crt:/etc/registry-auth/token.crt \
-  -e REGISTRY_AUTH_TOKEN_AUTOREDIRECT=true \
-  -e REGISTRY_AUTH_TOKEN_REALM=/auth/token \
-  -e REGISTRY_AUTH_TOKEN_SERVICE=token-service \
-  -e REGISTRY_AUTH_TOKEN_ISSUER=registry-token-issuer \
-  -e REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/etc/registry-auth/token.crt \
-  registry:2.8
-
-# tests
-
-docker login 127.0.0.1:8080 -u admin -p admin
-docker tag registry:2.8 127.0.0.1:8080/registry:2.8
-docker push 127.0.0.1:8080/registry:2.8
-docker logout 127.0.0.1:8080
-docker rmi 127.0.0.1:8080/registry:2.8
-docker pull 127.0.0.1:8080/registry:2.8
+  curl https://github.com/alauda/registry-auth/blob/main/scripts/quick-start.sh | bash
 ```
 
 ## Token 认证

@@ -1,6 +1,6 @@
 # Registry-Auth
 
-![Registry-Auth svg](./registry-auth.svg)
+![Registry-Auth SVG](./registry-auth.svg)
 
 ----
 
@@ -10,7 +10,7 @@ Docker Registry can be configurated with three kinds of authentications:
 
   * **silly** which is only appropriate for development. It simply checks for the existence of the Authorization header in the HTTP request. It does not check the header’s value.
 
-  * **htpasswd** which supports username and password authentication. Docker Registry loads the `htpasswd` config once when startup. The `htpasswd` only resolves the authentication problem, but can not provide authorizations.
+  * **htpasswd** which supports username and password authentication. Docker Registry loads the `htpasswd` config once when startup. The htpasswd only resolves the authentication problem, but can not provide authorizations.
 
   * **token** which supports authentication and authorization. It takes the `JWT` format including the token's validation period and authorized actions. You can set each repository's accessibilities for users.
 
@@ -27,64 +27,10 @@ Registry-auth has implemented the token and the proxy authentication.
 
 ## Quick Start
 
-The following script will run a simple Registry-Auth and Docker Registry service. It then tests the docker login and pushes and pulls images.
+The following [script](./scripts/quick-start.sh) will run a simple Registry-Auth and Docker Registry service. It then tests the docker login and pushes and pulls images.
 
 ```bash
-#!/bin/bash
-
-# generate certificates
-openssl req -new -newkey rsa:2048 -days 365 -x509 -keyout server.key -out server.crt -nodes -subj '/CN=registry-auth-server'
-openssl req -new -newkey rsa:2048 -days 365 -x509 -keyout token.key -out token.crt -nodes -subj '/CN=registry-auth-token'
-
-# generate a demo auth config
-# only admin can push images but anyone can pull images
-cat <<EOF > ./auth.yaml
-users:
-  admin: admin
-auths:
-  admin:
-  - target: .*
-    useRegexp: true
-    actions:
-    - pull
-    - push
-  _anonymous:
-  - target: .*
-    useRegexp: true
-    actions:
-    - pull
-EOF
-
-# run Registry-Auth
-docker run -d --name registry-auth -p 8080:8080 \
-  -v $(pwd):/etc/registry-auth \
-  ghcr.io/alauda/registry-auth:latest \
-  --server-tls-cert-file=/etc/registry-auth/server.crt \
-  --server-tls-key-file=/etc/registry-auth/server.key \
-  --auth-public-cert-file=/etc/registry-auth/token.crt \
-  --auth-private-key-file=/etc/registry-auth/token.key \
-  --auth-config-file=/etc/registry-auth/auth.yaml
-
-# run docker registry
-docker run -d \
-  --name registry \
-  --network container:registry-auth \
-  -v $(pwd)/token.crt:/etc/registry-auth/token.crt \
-  -e REGISTRY_AUTH_TOKEN_AUTOREDIRECT=true \
-  -e REGISTRY_AUTH_TOKEN_REALM=/auth/token \
-  -e REGISTRY_AUTH_TOKEN_SERVICE=token-service \
-  -e REGISTRY_AUTH_TOKEN_ISSUER=registry-token-issuer \
-  -e REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/etc/registry-auth/token.crt \
-  registry:2.8
-
-# tests
-
-docker login 127.0.0.1:8080 -u admin -p admin
-docker tag registry:2.8 127.0.0.1:8080/registry:2.8
-docker push 127.0.0.1:8080/registry:2.8
-docker logout 127.0.0.1:8080
-docker rmi 127.0.0.1:8080/registry:2.8
-docker pull 127.0.0.1:8080/registry:2.8
+  curl https://github.com/alauda/registry-auth/blob/main/scripts/quick-start.sh | bash
 ```
 
 ## The Token Authentication

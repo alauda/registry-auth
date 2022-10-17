@@ -1,0 +1,15 @@
+version: 0.1
+log:
+  level: debug
+storage:
+  delete:
+    enabled: true
+  cache:
+    blobdescriptor: inmemory
+  filesystem:
+    rootdirectory: /var/lib/registry
+  maintenance:
+    uploadpurging:
+      enabled: false
+http:
+  addr: :5000
