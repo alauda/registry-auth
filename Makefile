@@ -32,7 +32,7 @@ build: fmt vet
 
 .PHONY: image
 image:
-	@docker build -t gchr.io/alauda/registry-auth:$(VERSION) ${DOCKER_BUILD_ARGS} .
+	@docker build -t ghcr.io/alauda/registry-auth:$(VERSION) ${DOCKER_BUILD_ARGS} .
 
 .PHONY: fmt
 fmt:
