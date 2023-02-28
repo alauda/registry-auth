@@ -118,8 +118,9 @@ func (c *thirdpartyClient) Request(req *http.Request, res interface{}) error {
 		return fmt.Errorf("service is not available: %s", resp.Status)
 	case http.StatusInternalServerError:
 		return fmt.Errorf("internal server error: %s", resp.Status)
+	default:
+		return fmt.Errorf("unknown response status: %s", resp.Status)
 	}
-	return fmt.Errorf("unknown response status: %s", resp.Status)
 }
 
 func closeResp(r *http.Response) {

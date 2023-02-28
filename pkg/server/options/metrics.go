@@ -2,12 +2,6 @@ package options
 
 import (
 	"bufio"
-	"github.com/alauda/registry-auth/pkg/server"
-	"github.com/emicklei/go-restful"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"io"
 	"net"
 	"net/http"
@@ -15,6 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/alauda/registry-auth/pkg/server"
+	"github.com/emicklei/go-restful"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -99,7 +100,10 @@ func (o *MetricsOptions) Filter(req *restful.Request, res *restful.Response, cha
 	elapsedMicroseconds := float64(elapsed / time.Microsecond)
 	userAgent := cleanUserAgent(req.Request.UserAgent())
 	code := codeToString(res.StatusCode())
-	path := req.SelectedRoutePath()
+	path := ""
+	if req.Request != nil {
+		path = req.Request.RequestURI
+	}
 
 	// request count
 	requestCounter.WithLabelValues(req.Request.Method, path, userAgent, code).Inc()
