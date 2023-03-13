@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
@@ -175,7 +176,31 @@ func (s *Server) Start() error {
 	handler := s.Container()
 
 	if s.ServerConfig.TLSCertFile != "" && s.ServerConfig.TLSKeyFile != "" {
-		return http.ListenAndServeTLS(addr, s.ServerConfig.TLSCertFile, s.ServerConfig.TLSKeyFile, handler)
+
+		cert, err := tls.LoadX509KeyPair(s.ServerConfig.TLSCertFile, s.ServerConfig.TLSKeyFile)
+		if err != nil {
+			return err
+		}
+
+		config := tls.Config{
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			},
+			MinVersion:   tls.VersionTLS12,
+			Certificates: []tls.Certificate{cert},
+		}
+
+		listener, err := tls.Listen("tcp", addr, &config)
+		if err != nil {
+			return err
+		}
+
+		return http.Serve(listener, handler)
 	}
 	return http.ListenAndServe(addr, handler)
 }
