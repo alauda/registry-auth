@@ -115,7 +115,7 @@ func (a *App) initRootCmd() {
 // Run is used to launch the application.
 func (a *App) Run() {
 	if err := a.rootCmd.Execute(); err != nil {
-		fmt.Printf("%v %v\n", color.RedString("Error:"), err)
+		printError(err)
 		os.Exit(1)
 	}
 }
@@ -131,7 +131,7 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) {
 		if configurableOptions, ok := a.options.(ConfigurableOptions); ok {
 			if errs := configurableOptions.ApplyFlags(); len(errs) > 0 {
 				for _, err := range errs {
-					fmt.Printf("%v %v\n", color.RedString("Error:"), err)
+					printError(err)
 				}
 				os.Exit(1)
 			}
@@ -142,7 +142,7 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) {
 
 		if ConfigurableOptions, ok := a.options.(ServerOptions); ok {
 			if err := ConfigurableOptions.ApplyToServer(a.server); err != nil {
-				fmt.Printf("%v %v\n", color.RedString("Error:"), err)
+				printError(err)
 				os.Exit(1)
 			}
 		}
@@ -153,14 +153,18 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) {
 			fmt.Printf("%v Log data will now stream in as it occurs:\n", progressMessage)
 		}
 		if err := a.runFunc(a.basename); err != nil {
-			fmt.Printf("%v %v\n", color.RedString("Error:"), err)
+			printError(err)
 			os.Exit(1)
 		}
 	}
 
 	err := a.server.Start()
 	if err != nil {
-		fmt.Printf("%v %v\n", color.RedString("Error:"), err)
+		printError(err)
 		os.Exit(1)
 	}
+}
+
+func printError(err error) {
+	fmt.Printf("%v %v\n", color.RedString("Error:"), err)
 }

@@ -8,13 +8,14 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/thoas/go-funk"
 
@@ -134,6 +135,7 @@ func getActionFromHttpReq(req *http.Request) []string {
 		result = append(result, PushAction)
 	case http.MethodDelete:
 		result = append(result, DeleteAction)
+	default:
 	}
 	return result
 }

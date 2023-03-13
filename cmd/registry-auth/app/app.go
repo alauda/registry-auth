@@ -10,6 +10,7 @@ func NewApp(basename string) *app.App {
 	opts := serverOptions.With(
 		serverOptions.NewLogOptions(),
 		serverOptions.NewServerOptions(),
+		serverOptions.NewMetricsOptions(),
 		serverOptions.NewBasicOptions(),
 	)
 	return app.NewApp("registry auth", basename, app.WithOptions(opts))
