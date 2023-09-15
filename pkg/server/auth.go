@@ -104,7 +104,7 @@ type Claims struct {
 }
 
 type ScopeDecoder func(r *http.Request) (AccessScope, error)
-type ScopeMatcher func(result AccessScope, request AccessScope) bool
+type ScopeMatcher func(req *http.Request, result AccessScope, request AccessScope) bool
 
 func (ca *ClaimAccess) String() string {
 	return strings.Join([]string{
@@ -147,7 +147,7 @@ func DecodeScopeFromUrl(req *http.Request) (AccessScope, error) {
 		claimAccessName = "catalog"
 		claimAccessType = RegistryAccessType
 	} else if req.URL.Path == "/v2/" {
-		return nil, ErrNotHandleAuthHeader
+		return r, nil
 		// When processing /v2/<name>/manifests/<reference>, special processing is required to prevent tags from being manifests, tags or blobs
 	} else if pathParams := strings.Split(req.URL.Path, "/"); len(pathParams) >= 5 && pathParams[len(pathParams)-2] == "manifests" {
 		claimAccessName = strings.Join(pathParams[2:len(pathParams)-2], "/")
@@ -439,7 +439,11 @@ func (a *AuthProcessor) Sign(user, service string, scope AccessScope) (*Token, e
 	}, nil
 }
 
-func IsScopeActionMatch(resultScope AccessScope, requestScope AccessScope) bool {
+func IsScopeActionMatch(req *http.Request, resultScope AccessScope, requestScope AccessScope) bool {
+	if req.URL.Path == "/v2/" {
+		return true
+	}
+
 	for _, resultAccess := range resultScope {
 		for _, requestAccess := range requestScope {
 			if requestAccess.Type != resultAccess.Type {

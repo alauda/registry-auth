@@ -43,7 +43,7 @@ func (s *Server) signToken(req *restful.Request, decodeScopeFunc ScopeDecoder, i
 	}
 
 	if isActionMatchFunc != nil {
-		if !isActionMatchFunc(resultScope, scope) {
+		if !isActionMatchFunc(req.Request, resultScope, scope) {
 			err = ErrNotHandleAuthHeader
 			return
 		}
@@ -118,7 +118,7 @@ func (s *Server) HandleProxy(res http.ResponseWriter, req *http.Request) {
 
 func handleAuthorizationHeader(server *Server, req *http.Request) (int, error) {
 	authHeader := req.Header.Get("Authorization")
-	if strings.HasPrefix(authHeader, BasicPrefix) || authHeader == "" {
+	if strings.HasPrefix(authHeader, BasicPrefix) {
 		token, status, err := server.signToken(restful.NewRequest(req), DecodeScopeFromUrl, IsScopeActionMatch)
 		if err == nil {
 			req.Header.Set("Authorization", BearerPrefix+token.Token)
