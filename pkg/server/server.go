@@ -175,6 +175,24 @@ func (s *Server) Start() error {
 	addr := fmt.Sprintf("%s:%d", s.ServerConfig.BindAddress, s.ServerConfig.Port)
 	handler := s.Container()
 
+	connState := func(conn net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			if tcpConn, ok := conn.(*net.TCPConn); ok {
+				err := tcpConn.SetKeepAlive(true)
+				if err != nil {
+					logger.Error(fmt.Sprintf("failed to set keepalive, err: %v", err), zap.String("func", "connState"))
+					return
+				}
+
+				err = tcpConn.SetKeepAlivePeriod(time.Second * 30)
+				if err != nil {
+					logger.Error(fmt.Sprintf("failed to set keepalive period, err: %v", err), zap.String("func", "connState"))
+					return
+				}
+			}
+		}
+	}
+
 	if s.ServerConfig.TLSCertFile != "" && s.ServerConfig.TLSKeyFile != "" {
 
 		cert, err := tls.LoadX509KeyPair(s.ServerConfig.TLSCertFile, s.ServerConfig.TLSKeyFile)
@@ -200,7 +218,9 @@ func (s *Server) Start() error {
 			return err
 		}
 
-		return http.Serve(listener, handler)
+		srv := http.Server{Handler: handler, ConnState: connState}
+		return srv.Serve(listener)
 	}
-	return http.ListenAndServe(addr, handler)
+	srv := http.Server{Addr: addr, Handler: handler, ConnState: connState}
+	return srv.ListenAndServe()
 }
