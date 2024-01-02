@@ -13,6 +13,7 @@ import (
 )
 
 func WatchSecret(client kubernetes.Interface, namespace, labelSelector string, stop <-chan struct{}, p *AuthProcessor) error {
+	logger.Info(fmt.Sprintf("starting watch secret, namespace(%s), labelSelector(%s)", namespace, labelSelector), zap.String("func", "WatchSecret"))
 	selector, err := labels.Parse(labelSelector)
 	if err != nil {
 		return err
@@ -27,6 +28,7 @@ func WatchSecret(client kubernetes.Interface, namespace, labelSelector string, s
 			}
 
 			if selector.Matches(labels.Set(secret.Labels)) {
+				logger.Info(fmt.Sprintf(`load config from secret "%s/%s"`, secret.Namespace, secret.Name), zap.String("func", "WatchSecret"))
 				if err := p.LoadFromSecret(nil, secret.Data); err != nil {
 					logger.Error(fmt.Sprintf(`load config from secret "%s/%s" error`, secret.Namespace, secret.Name), zap.String("func", "WatchSecret"))
 				}
@@ -40,6 +42,10 @@ func WatchSecret(client kubernetes.Interface, namespace, labelSelector string, s
 			}
 			matchOld := selector.Matches(labels.Set(secretOld.Labels))
 			matchNew := selector.Matches(labels.Set(secretNew.Labels))
+
+			if matchOld || matchNew {
+				logger.Info(fmt.Sprintf(`load config from secret "%s/%s"`, secretNew.Namespace, secretNew.Name), zap.String("func", "WatchSecret"))
+			}
 
 			var err error
 			if matchOld && matchNew {
@@ -59,6 +65,7 @@ func WatchSecret(client kubernetes.Interface, namespace, labelSelector string, s
 				return
 			}
 			if selector.Matches(labels.Set(secret.Labels)) {
+				logger.Info(fmt.Sprintf(`load config from secret "%s/%s"`, secret.Namespace, secret.Name), zap.String("func", "WatchSecret"))
 				if err := p.LoadFromSecret(secret.Data, nil); err != nil {
 					logger.Error(fmt.Sprintf(`remove config from secret "%s/%s" error`, secret.Namespace, secret.Name), zap.String("func", "WatchSecret"))
 				}
@@ -71,5 +78,6 @@ func WatchSecret(client kubernetes.Interface, namespace, labelSelector string, s
 			return fmt.Errorf("informer failed to WaitForCacheSync")
 		}
 	}
+	logger.Info(fmt.Sprintf("watch secret successfully, namespace(%s), labelSelector(%s)", namespace, labelSelector), zap.String("func", "WatchSecret"))
 	return nil
 }
