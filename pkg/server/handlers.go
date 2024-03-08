@@ -16,16 +16,17 @@ func (s *Server) signToken(req *restful.Request, decodeScopeFunc ScopeDecoder, i
 	var scope, resultScope AccessScope
 	status = 200
 
-	accountArg := req.QueryParameter("account")
 	scopeArg := req.QueryParameter("scope")
 
 	clientIP := getClientIP(req.Request)
 	defer func() {
-		debug := fmt.Sprintf("%s %s %d %v", clientIP, req.Request.URL.String(), status, err)
-		logger.Debug(debug, zap.String("func", "signToken"))
-
-		info := fmt.Sprintf("%s | %s | %s | %v | %v | %d | %v", clientIP, accountArg, scopeArg, scope, resultScope, status, err)
-		logger.Info(info, zap.String("func", "signToken"))
+		if err != nil && !errors.Is(err, ErrNotHandleAuthHeader) {
+			info := fmt.Sprintf("%s | scope %s | resultScope %v | %d | %v", clientIP, scopeArg, resultScope, status, err)
+			logger.Error(info, zap.String("func", "signToken"))
+		} else {
+			info := fmt.Sprintf("%s |scope %s | resultScope %v | %d", clientIP, scopeArg, resultScope, status)
+			logger.Info(info, zap.String("func", "signToken"))
+		}
 	}()
 	user, err := s.processor.Authenticate(req.HeaderParameter("Authorization"))
 	if err != nil {
@@ -75,7 +76,7 @@ func (s *Server) HandleAuth(req *restful.Request, res *restful.Response) {
 		ms := time.Since(now).Milliseconds()
 
 		info := fmt.Sprintf("%s %s %d ms", req.Request.Method, req.Request.URL.String(), ms)
-		logger.Info(info, zap.String("func", "HandleAuth"))
+		logger.Debug(info, zap.String("func", "HandleAuth"))
 	}()
 
 	token, status, err := s.signToken(req, DecodeScope, nil)
@@ -121,6 +122,7 @@ func handleAuthorizationHeader(server *Server, req *http.Request) (int, error) {
 	if strings.HasPrefix(authHeader, BasicPrefix) {
 		token, status, err := server.signToken(restful.NewRequest(req), DecodeScopeFromUrl, IsScopeActionMatch)
 		if err == nil {
+			logger.Debug(fmt.Sprintf("%v | sign token successfully, set Authorization header", getClientIP(req)), zap.String("func", "handleAuthorizationHeader"))
 			req.Header.Set("Authorization", BearerPrefix+token.Token)
 		} else if !errors.Is(err, ErrNotHandleAuthHeader) {
 			return status, err

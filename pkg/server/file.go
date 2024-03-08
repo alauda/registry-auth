@@ -9,6 +9,7 @@ import (
 )
 
 func readConfigFile(path string, p *AuthProcessor) error {
+	logger.Info(fmt.Sprintf("read config file from %s", path), zap.String("func", "readConfigFile"))
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		logger.Error(fmt.Sprintf(`read config file from "%s" error: %v`, path, err), zap.String("func", "readConfigFile"))
@@ -21,6 +22,7 @@ func readConfigFile(path string, p *AuthProcessor) error {
 }
 
 func WatchConfigFile(path string, stop <-chan struct{}, p *AuthProcessor) error {
+	logger.Info(fmt.Sprintf("staring watch config file %s", path), zap.String("func", "WatchConfigFile"))
 	if err := readConfigFile(path, p); err != nil {
 		return err
 	}
@@ -45,5 +47,6 @@ func WatchConfigFile(path string, stop <-chan struct{}, p *AuthProcessor) error 
 			}
 		}
 	}()
+	logger.Info(fmt.Sprintf("watch config file %s successfully", path), zap.String("func", "WatchConfigFile"))
 	return nil
 }
