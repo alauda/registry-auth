@@ -2,11 +2,7 @@ module github.com/alauda/registry-auth
 
 go 1.18
 
-replace (
-	golang.org/x/crypto => golang.org/x/crypto v0.17.0
-	golang.org/x/net => golang.org/x/net v0.17.0
-	k8s.io/client-go => k8s.io/client-go v0.24.4
-)
+replace k8s.io/client-go => k8s.io/client-go v0.24.4
 
 require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
@@ -21,7 +17,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/thoas/go-funk v0.9.2
 	go.uber.org/zap v1.23.0
-	golang.org/x/crypto v0.17.0
+	golang.org/x/crypto v0.21.0
 	gopkg.in/fsnotify.v1 v1.4.7
 	gopkg.in/square/go-jose.v2 v2.6.0
 	k8s.io/api v0.24.4
@@ -72,10 +68,10 @@ require (
 	github.com/subosito/gotenv v1.3.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sys v0.15.0 // indirect
-	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
