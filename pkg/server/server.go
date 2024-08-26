@@ -10,6 +10,8 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -171,8 +173,19 @@ func (s *Server) ApplyToServer() error {
 	return nil
 }
 
-func (s *Server) Start() error {
-	addr := fmt.Sprintf("%s:%d", s.ServerConfig.BindAddress, s.ServerConfig.Port)
+func (s *Server) Start(ctx context.Context) error {
+	var addrs []string
+	if s.ServerConfig.BindAddress == "" {
+		addrs = append(addrs, ":"+strconv.Itoa(s.ServerConfig.Port))
+	} else {
+		for _, addr := range strings.Split(s.ServerConfig.BindAddress, ",") {
+			if ip := net.ParseIP(addr); ip != nil && ip.To4() == nil {
+				addr = "[" + addr + "]"
+			}
+			addrs = append(addrs, addr+":"+strconv.Itoa(s.ServerConfig.Port))
+		}
+	}
+
 	handler := s.Container()
 
 	connState := func(conn net.Conn, state http.ConnState) {
@@ -194,7 +207,6 @@ func (s *Server) Start() error {
 	}
 
 	if s.ServerConfig.TLSCertFile != "" && s.ServerConfig.TLSKeyFile != "" {
-
 		cert, err := tls.LoadX509KeyPair(s.ServerConfig.TLSCertFile, s.ServerConfig.TLSKeyFile)
 		if err != nil {
 			return err
@@ -212,15 +224,31 @@ func (s *Server) Start() error {
 			MinVersion:   tls.VersionTLS12,
 			Certificates: []tls.Certificate{cert},
 		}
+		for _, addr := range addrs {
+			go func(addr string) {
+				listener, err := tls.Listen("tcp", addr, &config)
+				if err != nil {
+					logger.Fatal(fmt.Sprintf("failed to listen %s, err: %v", addr, err), zap.String("func", "Start"))
+					return
+				}
 
-		listener, err := tls.Listen("tcp", addr, &config)
-		if err != nil {
-			return err
+				srv := http.Server{Handler: handler, ConnState: connState}
+				if err := srv.Serve(listener); err != nil {
+					logger.Fatal(fmt.Sprintf("failed to serve at %s, err: %v", addr, err), zap.String("func", "Start"))
+				}
+			}(addr)
 		}
-
-		srv := http.Server{Handler: handler, ConnState: connState}
-		return srv.Serve(listener)
+	} else {
+		for _, addr := range addrs {
+			go func(addr string) {
+				srv := http.Server{Addr: addr, Handler: handler, ConnState: connState}
+				if err := srv.ListenAndServe(); err != nil {
+					logger.Fatal(fmt.Sprintf("failed to listen and serve at %s, err: %v", addr, err), zap.String("func", "Start"))
+				}
+			}(addr)
+		}
 	}
-	srv := http.Server{Addr: addr, Handler: handler, ConnState: connState}
-	return srv.ListenAndServe()
+
+	<-ctx.Done()
+	return nil
 }
