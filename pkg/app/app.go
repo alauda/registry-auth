@@ -158,7 +158,7 @@ func (a *App) runCommand(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	err := a.server.Start()
+	err := a.server.Start(cmd.Context())
 	if err != nil {
 		printError(err)
 		os.Exit(1)

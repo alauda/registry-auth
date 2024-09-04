@@ -3,6 +3,7 @@ package options
 import (
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/alauda/registry-auth/pkg/server"
 	"github.com/alauda/registry-auth/pkg/server/config"
@@ -53,8 +54,12 @@ func (o *ServerOptions) ApplyFlags() []error {
 	var errs []error
 
 	o.BindAddress = viper.GetString(configServerBindAddress)
-	if o.BindAddress != "" && net.ParseIP(o.BindAddress) == nil {
-		errs = append(errs, fmt.Errorf("--%s must be IP", flagServerBindAddress))
+	if o.BindAddress != "" {
+		for _, ip := range strings.Split(o.BindAddress, ",") {
+			if net.ParseIP(ip) == nil {
+				errs = append(errs, fmt.Errorf("--%s %s must be IP", flagServerBindAddress, ip))
+			}
+		}
 	}
 
 	o.Port = viper.GetInt(configServerPort)
