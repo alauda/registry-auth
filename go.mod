@@ -19,7 +19,7 @@ require (
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.21.0
 	gopkg.in/fsnotify.v1 v1.4.7
-	gopkg.in/square/go-jose.v2 v2.6.0
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 	k8s.io/api v0.24.4
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.0.0-00010101000000-000000000000
