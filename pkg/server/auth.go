@@ -1,7 +1,6 @@
 package server
 
 import (
-	"crypto"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/base64"
@@ -19,7 +18,6 @@ import (
 
 	"github.com/thoas/go-funk"
 
-	"github.com/docker/libtrust"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -81,7 +79,7 @@ type AuthProcessor struct {
 	ThirdpartyAuth ThirdpartyAuth
 
 	signer jose.Signer
-	kid    string
+	cert   *x509.Certificate
 }
 
 type ConfigFile struct {
@@ -195,7 +193,7 @@ func NewAuthProcessor(privateKeyFile, publicCertFile, issuer string, tokenDurati
 		Issuer:        issuer,
 		TokenDuration: time.Second * time.Duration(tokenDuration),
 	}
-	if err := a.getKid(publicCertFile); err != nil {
+	if err := a.loadCert(publicCertFile); err != nil {
 		return nil, err
 	}
 
@@ -206,7 +204,7 @@ func NewAuthProcessor(privateKeyFile, publicCertFile, issuer string, tokenDurati
 	return a, nil
 }
 
-func (a *AuthProcessor) getKid(publicCertFile string) error {
+func (a *AuthProcessor) loadCert(publicCertFile string) error {
 	data, err := ioutil.ReadFile(publicCertFile)
 	if err != nil {
 		return err
@@ -221,12 +219,7 @@ func (a *AuthProcessor) getKid(publicCertFile string) error {
 		return fmt.Errorf("parse certificate '%s' error: %v ", publicCertFile, err)
 	}
 
-	pubKey, err := libtrust.FromCryptoPublicKey(crypto.PublicKey(cert.PublicKey))
-	if err != nil {
-		return fmt.Errorf("parse public key '%s' error: %v ", publicCertFile, err)
-	}
-
-	a.kid = pubKey.KeyID()
+	a.cert = cert
 	return nil
 }
 
@@ -245,12 +238,15 @@ func (a *AuthProcessor) generateSigner(privateKeyFile string) error {
 		return fmt.Errorf("the private key is not in RSA format")
 	}
 
-	op := &jose.SignerOptions{}
+	op := (&jose.SignerOptions{}).WithHeader(
+		jose.HeaderKey("x5c"),
+		[]string{base64.StdEncoding.EncodeToString(a.cert.Raw)},
+	)
 
 	a.signer, err = jose.NewSigner(jose.SigningKey{
 		Algorithm: jose.RS256,
 		Key:       rsaPrivKey,
-	}, op.WithHeader(jose.HeaderKey("kid"), a.kid))
+	}, op)
 	return err
 }
 

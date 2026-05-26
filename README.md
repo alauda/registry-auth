@@ -162,7 +162,9 @@ data:
 The Docker Registry need configure to work with Registry-Auth.
 You can configure it by config file or environment variables.
 
-You can add the following configs in /etc/docker/registry/config.yml:
+Registry-Auth works with both `distribution/distribution` v2.x and v3.x. The token configuration keys (`realm`, `service`, `issuer`, `rootcertbundle`, `autoredirect`) and `REGISTRY_AUTH_TOKEN_*` environment variables are identical across both versions. Note that v3 changed the default config path from `/etc/docker/registry/config.yml` to `/etc/distribution/config.yml`.
+
+You can add the following configs in /etc/docker/registry/config.yml (v2) or /etc/distribution/config.yml (v3):
 
 ``` yaml
 auth:

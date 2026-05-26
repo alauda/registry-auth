@@ -40,7 +40,7 @@ type BasicOptions struct {
 	config.BasicConfig
 }
 
-//// NewConsoleOptions creates a ConsoleOptions object with default parameters.
+// // NewConsoleOptions creates a ConsoleOptions object with default parameters.
 func NewBasicOptions() *BasicOptions {
 	return &BasicOptions{}
 }

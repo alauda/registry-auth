@@ -7,7 +7,6 @@ toolchain go1.24.11
 replace k8s.io/client-go => k8s.io/client-go v0.24.4
 
 require (
-	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7
 	github.com/emicklei/go-restful v2.16.0+incompatible
 	github.com/fatih/color v1.13.0
 	github.com/google/uuid v1.1.2
