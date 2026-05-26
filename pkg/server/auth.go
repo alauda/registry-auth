@@ -61,9 +61,9 @@ type UserAuthorization struct {
 }
 
 type ClaimAccess struct {
-	Type    string
-	Name    string
-	Actions []string
+	Type    string   `json:"type"`
+	Name    string   `json:"name"`
+	Actions []string `json:"actions"`
 }
 
 type AccessScope []ClaimAccess

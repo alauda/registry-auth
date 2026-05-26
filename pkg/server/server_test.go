@@ -150,6 +150,20 @@ func TestSign_EmitsX5cHeaderAndVerifies(t *testing.T) {
 	if len(claims.Access) != 1 || claims.Access[0].Name != "foo/bar" {
 		t.Fatalf("access = %+v", claims.Access)
 	}
+
+	// distribution v3 uses go-jose v3's JSON fork which (unlike encoding/json)
+	// does NOT fall back to a case-insensitive field match, so the access
+	// claim must serialize with lowercase keys (type/name/actions). Decode the
+	// raw JWT payload and assert that.
+	rawPayload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		t.Fatalf("decode payload: %v", err)
+	}
+	if !strings.Contains(string(rawPayload), `"type":"repository"`) ||
+		!strings.Contains(string(rawPayload), `"name":"foo/bar"`) ||
+		!strings.Contains(string(rawPayload), `"actions":["pull"]`) {
+		t.Fatalf("access claim must use lowercase keys (type/name/actions); got payload: %s", rawPayload)
+	}
 }
 
 func basicHeader(user, pass string) string {
