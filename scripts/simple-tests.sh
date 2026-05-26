@@ -76,16 +76,22 @@ function prepare_registry_auth() {
         --auth-config-file=auth.yaml &
 }
 
+function prepare_source_image() {
+    # Pull the upstream image into a docker-archive once. `docker-archive:` does
+    # not allow overwriting an existing file, so we cannot run this per-version
+    # inside the loop.
+    if [ ! -f /tmp/registry-src.tar ]; then
+        skopeo copy --insecure-policy --override-os=linux \
+            docker://"registry:2.8.1" \
+            docker-archive:"/tmp/registry-src.tar"
+    fi
+}
+
 function do_tests() {
     local version="$1"
     # version-tagged repo so different registry runs don't share state via the
     # client-side archive name only — push target encodes the version too.
     local repo_tag="registry-${version}"
-
-    # prepare artifact (use a stable upstream tag; we only care that push/pull round-trips)
-    skopeo copy --insecure-policy --override-os=linux \
-        docker://"registry:2.8.1" \
-        docker-archive:"/tmp/registry-src.tar"
 
     # push expecting fail (no creds)
     set +e
@@ -117,6 +123,7 @@ function main() {
     prepare_skopeo
     prepare_auth
     prepare_registry_auth
+    prepare_source_image
 
     for version in ${REGISTRY_VERSIONS}; do
         echo "=== testing against distribution ${version} ==="
