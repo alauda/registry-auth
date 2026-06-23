@@ -157,7 +157,9 @@ data:
 当使用 Registry-Auth 时，Docker Registry 也要做必要的设置。
 你可以选择通过 **配置文件** 或 **环境变量** 的方式配置 Docker Registry。
 
-你可以在 /etc/docker/registry/config.yml 中配置如下字段：
+Registry-Auth 同时兼容 `distribution/distribution` v2.x 与 v3.x，token 段的配置项（`realm`、`service`、`issuer`、`rootcertbundle`、`autoredirect`）与 `REGISTRY_AUTH_TOKEN_*` 环境变量两版完全一致。注意 v3 的默认配置路径由 `/etc/docker/registry/config.yml` 改为 `/etc/distribution/config.yml`。
+
+你可以在 /etc/docker/registry/config.yml（v2）或 /etc/distribution/config.yml（v3）中配置如下字段：
 
 ``` yaml
 auth:
