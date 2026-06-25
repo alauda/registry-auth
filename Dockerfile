@@ -1,5 +1,5 @@
 ARG BASE_IMAGE="gcr.io/distroless/static:nonroot"
-ARG BUILDER_IMAGE="golang:1.24-trixie"
+ARG BUILDER_IMAGE="golang:1.25-trixie"
 ARG RUN_TEST=true
 ARG UID="65532"
 ARG GID="65532"
